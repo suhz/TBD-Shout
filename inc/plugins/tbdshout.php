@@ -34,7 +34,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.1",
+    "version"       => "0.1.2",
     "compatibility" => "18*",
   );
 }
@@ -439,27 +439,16 @@ function tbdshout_sendShout() {
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
 
     $save[] = array(
-      'uid'       => $user['uid'],
-      'msg'       => htmlspecialchars_uni(html_entity_decode($x->msg)),
-      'msg_date'  => date('Y-m-d H:i:s', $x->masa),
-      'msg_ip'    => $x->msg_ip,
+      'uid'       => (int)$user['uid'],
+      'msg'       => $db->escape_string(htmlspecialchars_uni(html_entity_decode($x->msg))),
+      'msg_date'  => date('Y-m-d H:i:s', $db->escape_string($x->masa)),
+      'msg_ip'    => $db->escape_string($x->msg_ip),
       //'mobile'    => $mybb->input['mobile']==1?1:0
     );
   }
 
   $db->insert_query_multiple('tbdshout',$save);
 
-  header('Content-Type: application/json');
-
-  if ($db->insert_query('tbdshout', $data)) {
-    $chat_id = $db->insert_id();
-    echo 1;
-    //die(json_encode(array('status'=>1)));
-  } else {
-    $chat_id = 0;
-    echo 0;
-    //die(json_encode(array('status'=>0)));
-  }
 }
 
 //list of smileys
