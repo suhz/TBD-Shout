@@ -175,17 +175,18 @@ function tbdshout_activate() {
     padding-top:10px;
   }
 
-  .hijau {
-    color:green;
+  .bulat {
+    float: right;
+    width: 1em;
+    height: 1em;
+    -moz-border-radius: 50px;
+    -webkit-border-radius: 50px;
+    border-radius: 50px;
   }
 
-  .merah {
-    color:red;
-  }
-
-  .oren {
-    color:orange;
-  }
+  .hijau { background: green; }
+  .merah { background: red; }
+  .oren { background: orange; }
 
   .tbdshoutRow {
     vertical-align:bottom;
@@ -236,7 +237,8 @@ function tbdshout_activate() {
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > <span ng-class="{hijau:status==1,oren:status==2,merah:status==0,oren:status==3}" title="{{status_txt}}">&#9724; {{status_txt}}</span>
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" >
+                <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
           </tr>
