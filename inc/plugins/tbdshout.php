@@ -388,8 +388,8 @@ function tbdshout_getShout() {
   while ($row = $db->fetch_array($q)) {
 
     $msg = array(
-      'name'      => $row['username'],
-      'avatar'    => $row['avatar'],
+      'name'      => htmlspecialchars_uni($row['username']),
+      'avatar'    => htmlspecialchars_uni($row['avatar']),
       'msg'       => $parser->parse_message(html_entity_decode($row['msg']),array('me_username' => $mybb->user['username'])),
       'date'      => date('c',strtotime($row['msg_date']))
     );
@@ -412,12 +412,12 @@ function tbdshout_getShout() {
   $key = sha1($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key'].$mybb->user['uid'].generate_post_check());
 
   $ret = array(
-    'name'    => $mybb->user['username'],
-    'uid'     => $mybb->user['uid'],
+    'name'    => htmlspecialchars_uni($mybb->user['username']),
+    'uid'     => (int)$mybb->user['uid'],
     'ukey'    => $key, //user key,
-    'avatar'  => $mybb->user['avatar'],
+    'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
-    'channel' => $mybb->settings['tbdshout_channel'],
+    'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
     'smiley'  => tbshout_smiley(1),
     'max_height'  => (int)$mybb->settings['tbdshout_height'],
     'max_msg'     => (int)$mybb->settings['tbdshout_max_msg_disp'],
@@ -432,6 +432,7 @@ function tbdshout_sendShout() {
   global $db, $mybb;
 
   $data_arr = json_decode($mybb->input['push']);
+  if (!is_array($data_arr)) { die(); }
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
