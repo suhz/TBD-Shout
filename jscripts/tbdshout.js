@@ -68,8 +68,10 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
           msgcol.push(data.msg[i]);
         }
       }
+
+      $scope.sr_tinggi_kotak = { 'height': data.max_height + 'px'};
       udata = data;
-      max_msg_row = data.tbdshout_max_msg_disp;
+      max_msg_row = data.max_msg;
 
       if (data.channel !== '' && data.skey !== '') {
         callback();

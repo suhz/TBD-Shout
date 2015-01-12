@@ -34,7 +34,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.0",
+    "version"       => "0.1.1",
     "compatibility" => "18*",
   );
 }
@@ -153,7 +153,73 @@ function tbdshout_activate() {
   }
 
 
-  $css = "masa{float:right;font-size:.7em;padding:.5em .3em;text-align:right}.status-bull,.hijau,.oren,.merah{cursor:help;vertical-align:bottom;padding-top:10px}.hijau{color:green}.merah{color:red}.oren{color:orange}#tbdshoutRowBox{vertical-align:top;overflow-y:auto;overflow-x:hidden;height:350px;width:100%;padding:0 .2em}.tbdshoutRow{vertical-align:bottom}.sr_img{float:left;width:40px}.sr_msg{float:left;margin-left:10px}.tbdshoutoddRowOdd{background-color:#dcdcdc}.tbdshoutRowimg{width:40px;height:40px}.tbdshoutRow{min-height:50px;margin-bottom:.1em;overflow:hidden;padding:.2em;display:block}";
+  $css = "masa {
+    float:right;
+    font-size:.7em;
+    padding:.5em .3em;
+    text-align:right;
+  }
+
+  #tbdshoutRowBox {
+    vertical-align:top;
+    overflow-y:auto;
+    overflow-x:hidden;
+    height:350px;
+    width:100%;
+    padding:0 .2em;
+  }
+
+  .status-bull, .hijau, .oren, .merah {
+    cursor:help;
+    vertical-align:bottom;
+    padding-top:10px;
+  }
+
+  .hijau {
+    color:green;
+  }
+
+  .merah {
+    color:red;
+  }
+
+  .oren {
+    color:orange;
+  }
+
+  .tbdshoutRow {
+    vertical-align:bottom;
+  }
+
+  .sr_img {
+    float:left;
+    width:40px;
+  }
+
+  .sr_msg {
+    float:left;
+    margin-left:10px;
+    width:90%;
+  }
+
+  .tbdshoutoddRowOdd {
+    background-color:#dcdcdc;
+  }
+
+  .tbdshoutRowimg {
+    width:40px;
+    height:40px;
+  }
+
+  .tbdshoutRow {
+    min-height:50px;
+    margin-bottom:.1em;
+    overflow:hidden;
+    padding:.2em;
+    display:block;
+  }
+
+  ";
 
   $template = '
     <div id="tbdshout_box" ng-app="tbdshoutApp">
@@ -176,7 +242,7 @@ function tbdshout_activate() {
           </tr>
           <tr>
             <td class="trow1">
-              <div id="tbdshoutRowBox">
+              <div id="tbdshoutRowBox" ng-style="sr_tinggi_kotak">
                 <div class="tbdshoutRow" ng-class-odd="\'tbdshoutoddRowOdd\'" ng-class-even="\'tbdshoutoddRowEven\'" ng-repeat="row in msgRows">
                   <div class="sr_img">
                     <img class="tbdshoutRowimg" ng-src="{{row.avatar}}">
@@ -311,7 +377,7 @@ function tbdshout_getShout() {
 
   $q = $db->query("SELECT c.*, u.username, u.usergroup, u.avatar, u.displaygroup FROM ".TABLE_PREFIX."tbdshout c
   LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid = c.uid)
-  ORDER by c.id DESC LIMIT 40");
+  ORDER by c.id DESC LIMIT " . (int)$mybb->settings['tbdshout_max_msg_disp']);
 
   $chat = array();
   require_once MYBB_ROOT.'inc/class_parser.php';
