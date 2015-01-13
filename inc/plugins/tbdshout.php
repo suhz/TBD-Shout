@@ -409,14 +409,12 @@ function tbdshout_getShout() {
     }
   }
 
-  $key = sha1($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key'].$mybb->user['uid'].generate_post_check());
-
   $ret = array(
     'name'    => htmlspecialchars_uni($mybb->user['username']),
     'uid'     => (int)$mybb->user['uid'],
-    'ukey'    => $key, //user key,
-    'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
+    'ukey'    => tbdshout_getKey(), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
+    'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
     'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
     'smiley'  => tbshout_smiley(1),
     'max_height'  => (int)$mybb->settings['tbdshout_height'],
@@ -436,7 +434,7 @@ function tbdshout_sendShout() {
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    tbdshout_post_check($user, $x);
+    tbdshout_post_check($user, $x->key);
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
@@ -537,6 +535,14 @@ function tbdshout_pages() {
 }
 
 function tbdshout_getinfo() {
+  global $mybb;
+
+  echo $mybb->settings['tbdshout_channel']
+  .$mybb->settings['tbdshout_secret_key']
+  .$mybb->user['uid'].$mybb->user['username'];
+
+  echo '<br>'.tbdshout_getKey();
+
   $info = array('version'  => tbdshout_info()['version']);
   die(json_encode($info));
 }
@@ -564,12 +570,22 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_post_check($user,$post_data) {
+function tbdshout_getKey($user = NULL) {
   global $mybb;
 
-  $key = sha1($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key'].$post_data->uid.md5($user['loginkey'].$user['salt'].$user['regdate']));
+  if ($user == NULL) {
+    return md5($mybb->settings['tbdshout_channel']
+    .$mybb->settings['tbdshout_secret_key']
+    .$mybb->user['uid'].$mybb->user['username']);
+  } else {
+    return md5($mybb->settings['tbdshout_channel']
+    .$mybb->settings['tbdshout_secret_key']
+    .$user['uid'].$user['username']);
+  }
+}
 
-  if ($key !== $post_data->key) {
+function tbdshout_post_check($user, $post_key) {
+  if ($post_key !== tbdshout_getKey($user)) {
     die('invalid post code');
   }
 }
