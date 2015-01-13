@@ -535,14 +535,6 @@ function tbdshout_pages() {
 }
 
 function tbdshout_getinfo() {
-  global $mybb;
-
-  echo $mybb->settings['tbdshout_channel']
-  .$mybb->settings['tbdshout_secret_key']
-  .$mybb->user['uid'].$mybb->user['username'];
-
-  echo '<br>'.tbdshout_getKey();
-
   $info = array('version'  => tbdshout_info()['version']);
   die(json_encode($info));
 }
