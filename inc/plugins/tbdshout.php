@@ -34,7 +34,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.2",
+    "version"       => "0.1.3",
     "compatibility" => "18*",
   );
 }
@@ -175,17 +175,18 @@ function tbdshout_activate() {
     padding-top:10px;
   }
 
-  .hijau {
-    color:green;
+  .bulat {
+    float: right;
+    width: 1em;
+    height: 1em;
+    -moz-border-radius: 50px;
+    -webkit-border-radius: 50px;
+    border-radius: 50px;
   }
 
-  .merah {
-    color:red;
-  }
-
-  .oren {
-    color:orange;
-  }
+  .hijau { background: green; }
+  .merah { background: red; }
+  .oren { background: orange; }
 
   .tbdshoutRow {
     vertical-align:bottom;
@@ -236,7 +237,8 @@ function tbdshout_activate() {
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > <span ng-class="{hijau:status==1,oren:status==2,merah:status==0,oren:status==3}" title="{{status_txt}}">&#9724; {{status_txt}}</span>
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" >
+                <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
           </tr>
@@ -386,8 +388,8 @@ function tbdshout_getShout() {
   while ($row = $db->fetch_array($q)) {
 
     $msg = array(
-      'name'      => $row['username'],
-      'avatar'    => $row['avatar'],
+      'name'      => htmlspecialchars_uni($row['username']),
+      'avatar'    => htmlspecialchars_uni($row['avatar']),
       'msg'       => $parser->parse_message(html_entity_decode($row['msg']),array('me_username' => $mybb->user['username'])),
       'date'      => date('c',strtotime($row['msg_date']))
     );
@@ -407,15 +409,13 @@ function tbdshout_getShout() {
     }
   }
 
-  $key = sha1($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key'].$mybb->user['uid'].generate_post_check());
-
   $ret = array(
-    'name'    => $mybb->user['username'],
-    'uid'     => $mybb->user['uid'],
-    'ukey'    => $key, //user key,
-    'avatar'  => $mybb->user['avatar'],
+    'name'    => htmlspecialchars_uni($mybb->user['username']),
+    'uid'     => (int)$mybb->user['uid'],
+    'ukey'    => tbdshout_getKey(), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
-    'channel' => $mybb->settings['tbdshout_channel'],
+    'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
+    'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
     'smiley'  => tbshout_smiley(1),
     'max_height'  => (int)$mybb->settings['tbdshout_height'],
     'max_msg'     => (int)$mybb->settings['tbdshout_max_msg_disp'],
@@ -430,10 +430,11 @@ function tbdshout_sendShout() {
   global $db, $mybb;
 
   $data_arr = json_decode($mybb->input['push']);
+  if (!is_array($data_arr)) { die(); }
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    tbdshout_post_check($user, $x);
+    tbdshout_post_check($user, $x->key);
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
@@ -561,12 +562,22 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_post_check($user,$post_data) {
+function tbdshout_getKey($user = NULL) {
   global $mybb;
 
-  $key = sha1($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key'].$post_data->uid.md5($user['loginkey'].$user['salt'].$user['regdate']));
+  if ($user == NULL) {
+    return md5($mybb->settings['tbdshout_channel']
+    .$mybb->settings['tbdshout_secret_key']
+    .$mybb->user['uid'].$mybb->user['username']);
+  } else {
+    return md5($mybb->settings['tbdshout_channel']
+    .$mybb->settings['tbdshout_secret_key']
+    .$user['uid'].$user['username']);
+  }
+}
 
-  if ($key !== $post_data->key) {
+function tbdshout_post_check($user, $post_key) {
+  if ($post_key !== tbdshout_getKey($user)) {
     die('invalid post code');
   }
 }
