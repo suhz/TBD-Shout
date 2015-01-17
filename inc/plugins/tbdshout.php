@@ -412,7 +412,7 @@ function tbdshout_getShout() {
   $ret = array(
     'name'    => htmlspecialchars_uni($mybb->user['username']),
     'uid'     => (int)$mybb->user['uid'],
-    'ukey'    => tbdshout_getKey(), //user key
+    'ukey'    => tbdshout_getKey($mybb->user['uid'], $mybb->user['username']), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
     'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
     'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
@@ -429,12 +429,15 @@ function tbdshout_getShout() {
 function tbdshout_sendShout() {
   global $db, $mybb;
 
+  if (!$_POST) { die(); }
+
+
   $data_arr = json_decode($mybb->input['push']);
   if (!is_array($data_arr)) { die(); }
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    tbdshout_post_check($user, $x->key);
+    tbdshout_post_check($user['uid'].$user['username'], $x->key);
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
@@ -562,18 +565,13 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_getKey($user = NULL) {
+function tbdshout_getKey($uid, $username) {
   global $mybb;
 
-  if ($user == NULL) {
-    return md5($mybb->settings['tbdshout_channel']
-    .$mybb->settings['tbdshout_secret_key']
-    .$mybb->user['uid'].$mybb->user['username']);
-  } else {
-    return md5($mybb->settings['tbdshout_channel']
-    .$mybb->settings['tbdshout_secret_key']
-    .$user['uid'].$user['username']);
-  }
+  return md5($mybb->settings['tbdshout_channel']
+  .$mybb->settings['tbdshout_secret_key']
+  .(int)$uid.$username
+  .get_ip());
 }
 
 function tbdshout_post_check($user, $post_key) {
