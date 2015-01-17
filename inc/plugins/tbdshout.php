@@ -437,7 +437,7 @@ function tbdshout_sendShout() {
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    tbdshout_post_check($user['uid'].$user['username'], $x->key);
+    if ($x->key !== tbdshout_getKey($x->uid, $user['username'], $x->msg_ip)) { die(); }
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
@@ -565,17 +565,13 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_getKey($uid, $username) {
+function tbdshout_getKey($uid, $username, $ip = NULL) {
   global $mybb;
 
-  return md5($mybb->settings['tbdshout_channel']
-  .$mybb->settings['tbdshout_secret_key']
+  $u = $mybb->settings['tbdshout_channel']
   .(int)$uid.$username
-  .get_ip());
-}
+  .($ip!=NULL?$ip:get_ip());
 
-function tbdshout_post_check($user, $post_key) {
-  if ($post_key !== tbdshout_getKey($user)) {
-    die('invalid post code');
-  }
+  return base64_encode(hash_hmac('sha1',$u, $mybb->settings['tbdshout_secret_key'],true));
+
 }
