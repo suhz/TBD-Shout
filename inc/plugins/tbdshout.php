@@ -439,7 +439,7 @@ function tbdshout_sendShout() {
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    if ($x->key !== tbdshout_getKey($x->uid, $user['username']) { die(); }
+    if ($x->key !== tbdshout_getKey($x->uid, $user['username'])) { die(); }
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
