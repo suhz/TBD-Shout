@@ -111,6 +111,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
 
     ws.onOpen(function(data) {
       statusChange(1);
+      reconnect_time = 2000;
       //console.log('connected!');
     });
   });
