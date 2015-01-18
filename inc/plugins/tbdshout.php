@@ -26,6 +26,7 @@ if(!defined("IN_MYBB")) {
 $plugins->add_hook("xmlhttp", "tbdshout_xmlhttp");
 $plugins->add_hook("index_start", "tbdshout_output");
 $plugins->add_hook("global_end", "tbdshout_pages");
+$plugins->add_hook("misc_start", "tbdshout_misc_smiley");
 
 function tbdshout_info() {
   return array(
@@ -233,11 +234,11 @@ function tbdshout_activate() {
             </td>
           </tr>
         </thead>
-        <tbody ng-controller="shoutCtrl">
+        <tbody ng-controller="shoutCtrl" id="shoutCtrl">
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" >
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)
                 <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
@@ -370,6 +371,38 @@ function tbdshout_xmlhttp() {
   } else
   if ($mybb->input['action'] == 'tbdshout_info') {
     tbdshout_getinfo();
+  }
+}
+
+function tbdshout_misc_smiley() {
+  global $mybb, $templates, $lang;
+
+  if ($mybb->input['action'] == "tbdshout_smiley") {
+
+    $smiley_list = tbshout_smiley(true);
+
+    $smilies = '';
+    $class = "trow1";
+    $extra_class = ' smilie_pointer';
+    foreach($smiley_list as $smilie) {
+      $smilie['name'] = $smilie['find']."";
+      $smilie['image'] = $smilie['img'];
+      $smilie['insert'] = addslashes($smilie['find']);
+      $smilie['find'] = htmlspecialchars_uni($smilie['insert']);
+      $onclick = "  onclick=\"tbdshout_addSmiley('{$smilie['find']}');\"";
+      eval('$smilie_image = "'.$templates->get('smilie', 1, 0).'";');
+      eval("\$smilies .= \"".$templates->get("misc_smilies_popup_smilie")."\";");
+      if($e == 2) {
+        $smilies .= "</tr><tr>";
+        $e = 1;
+        $class = alt_trow();
+      } else {
+        $e = 2;
+      }
+    }
+
+    eval("\$tbdshout_smiley = \"".$templates->get("misc_smilies_popup", 1, 0)."\";");
+    output_page($tbdshout_smiley);
   }
 }
 
