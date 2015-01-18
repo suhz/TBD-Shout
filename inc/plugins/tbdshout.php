@@ -26,6 +26,7 @@ if(!defined("IN_MYBB")) {
 $plugins->add_hook("xmlhttp", "tbdshout_xmlhttp");
 $plugins->add_hook("index_start", "tbdshout_output");
 $plugins->add_hook("global_end", "tbdshout_pages");
+$plugins->add_hook("misc_start", "tbdshout_misc_smiley");
 
 function tbdshout_info() {
   return array(
@@ -34,7 +35,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.3",
+    "version"       => "0.1.4",
     "compatibility" => "18*",
   );
 }
@@ -233,11 +234,11 @@ function tbdshout_activate() {
             </td>
           </tr>
         </thead>
-        <tbody ng-controller="shoutCtrl">
+        <tbody ng-controller="shoutCtrl" id="shoutCtrl">
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" >
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)
                 <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
@@ -373,6 +374,38 @@ function tbdshout_xmlhttp() {
   }
 }
 
+function tbdshout_misc_smiley() {
+  global $mybb, $templates, $lang;
+
+  if ($mybb->input['action'] == "tbdshout_smiley") {
+
+    $smiley_list = tbshout_smiley(true);
+
+    $smilies = '';
+    $class = "trow1";
+    $extra_class = ' smilie_pointer';
+    foreach($smiley_list as $smilie) {
+      $smilie['name'] = $smilie['find']."";
+      $smilie['image'] = $smilie['img'];
+      $smilie['insert'] = addslashes($smilie['find']);
+      $smilie['find'] = htmlspecialchars_uni($smilie['insert']);
+      $onclick = "  onclick=\"tbdshout_addSmiley('{$smilie['find']}');\"";
+      eval('$smilie_image = "'.$templates->get('smilie', 1, 0).'";');
+      eval("\$smilies .= \"".$templates->get("misc_smilies_popup_smilie")."\";");
+      if($e == 2) {
+        $smilies .= "</tr><tr>";
+        $e = 1;
+        $class = alt_trow();
+      } else {
+        $e = 2;
+      }
+    }
+
+    eval("\$tbdshout_smiley = \"".$templates->get("misc_smilies_popup", 1, 0)."\";");
+    output_page($tbdshout_smiley);
+  }
+}
+
 //get chat messages & infos
 function tbdshout_getShout() {
   global $db, $mybb;
@@ -412,7 +445,7 @@ function tbdshout_getShout() {
   $ret = array(
     'name'    => htmlspecialchars_uni($mybb->user['username']),
     'uid'     => (int)$mybb->user['uid'],
-    'ukey'    => tbdshout_getKey(), //user key
+    'ukey'    => tbdshout_getKey($mybb->user['uid'], $mybb->user['username']), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
     'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
     'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
@@ -429,12 +462,17 @@ function tbdshout_getShout() {
 function tbdshout_sendShout() {
   global $db, $mybb;
 
+  $chat_server = array('128.199.222.90','2400:6180::d0:0:0:127:4001');
+
+  if (!$_POST) { die(); }
+  if (!in_array(get_ip(), $chat_server)) { die(); }
+
   $data_arr = json_decode($mybb->input['push']);
   if (!is_array($data_arr)) { die(); }
 
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
-    tbdshout_post_check($user, $x->key);
+    if ($x->key !== tbdshout_getKey($x->uid, $user['username'])) { die(); }
     tbdshout_canView($user);
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
@@ -562,22 +600,7 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_getKey($user = NULL) {
+function tbdshout_getKey($uid, $username) {
   global $mybb;
-
-  if ($user == NULL) {
-    return md5($mybb->settings['tbdshout_channel']
-    .$mybb->settings['tbdshout_secret_key']
-    .$mybb->user['uid'].$mybb->user['username']);
-  } else {
-    return md5($mybb->settings['tbdshout_channel']
-    .$mybb->settings['tbdshout_secret_key']
-    .$user['uid'].$user['username']);
-  }
-}
-
-function tbdshout_post_check($user, $post_key) {
-  if ($post_key !== tbdshout_getKey($user)) {
-    die('invalid post code');
-  }
+  return base64_encode(hash_hmac('sha1',$mybb->settings['tbdshout_channel'].(int)$uid.$username, $mybb->settings['tbdshout_secret_key'],true));
 }

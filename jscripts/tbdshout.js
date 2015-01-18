@@ -8,9 +8,10 @@ var tbdshoutApp = angular.module('tbdshoutApp', ['ngWebSocket','yaru22.angular-t
 
 tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', function ($scope,$sce,$http,$websocket){
 
-  var smiley_data = {},msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'}
+  var smiley_data = {},msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
   var max_msg_row = 30;
   var reconnect_time = 2000;
+  $scope.shoutText = ''
 
   var statusChange = function(status) {
     $scope.status = status;
@@ -111,6 +112,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
 
     ws.onOpen(function(data) {
       statusChange(1);
+      reconnect_time = 2000;
       //console.log('connected!');
     });
   });
@@ -126,4 +128,12 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
     $scope.shoutText = '';
   };
 
+  $scope.appendMsg = function(text) {
+    $scope.shoutText += ' ' + text;
+  };
+
 }]);
+
+var tbdshout_addSmiley = function(smiley) {
+  angular.element($('#shoutCtrl')).scope().appendMsg(smiley);
+};
