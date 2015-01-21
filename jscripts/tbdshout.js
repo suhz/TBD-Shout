@@ -73,6 +73,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
       $scope.sr_tinggi_kotak = { 'height': data.max_height + 'px'};
       udata = data;
       max_msg_row = data.max_msg;
+      $scope.isadmin = udata.isadmin;
 
       if (data.channel !== '' && data.skey !== '') {
         callback();
@@ -130,6 +131,17 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
 
   $scope.appendMsg = function(text) {
     $scope.shoutText += ' ' + text;
+  };
+
+  $scope.delMsg = function(row) {
+    if (confirm("Are you sure you want to delete?") === true) {
+      var index = msgcol.indexOf(row);
+
+      $http.post('xmlhttp.php?action=tbdshout_delete&post_code=' + my_post_key, { id: row.id })
+      .success(function(data) {
+        msgcol.splice(index, 1);
+      });
+    }
   };
 
 }]);
