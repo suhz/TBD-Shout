@@ -251,7 +251,7 @@ function tbdshout_activate() {
                     <img class="tbdshoutRowimg" ng-src="{{row.avatar}}">
                   </div>
                   <div class="sr_msg">
-                  <a href ng-click="delMsg($index)" ng-if="isadmin == 1">(del)</a> <b>{{row.name}}</b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
+                  <a href ng-click="delMsg(row)" ng-if="isadmin == 1 && row.id > 0">(del)</a> <b>{{row.name}}</b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
                   </div>
                   <masa>{{row.date | timeAgo}}</masa>
                 </div>
@@ -291,7 +291,7 @@ function tbdshout_activate() {
 
         var msg_id = $(this).attr(\'msg_id\');
         if (confirm("Are you sure you want to delete?") === true) {
-          $.post(\'xmlhttp.php?action=tbdshout_delete&post_code={$mybb->post_code}\', {id: msg_id}, function(ret) {
+          $.post(\'xmlhttp.php?action=tbdshout_delete&post_code=\' + my_post_key, {id: msg_id}, function(ret) {
             console.log($msg_id);
             $(\'.shoutMsg_\' + msg_id).remove();
           });
@@ -353,7 +353,7 @@ function tbdshout_deactivate() {
   global $db;
 
   $db->query("DELETE FROM ".TABLE_PREFIX."templates WHERE title IN('tbdshout_box','tbdshout_box_full') AND sid='-1'");
-  $db->query("DELETE FROM ".TABLE_PREFIX."themestylesheets WHERE name IN('tbdshout.css') AND tid='1'");
+  $db->query("DELETE FROM ".TABLE_PREFIX."themestylesheets WHERE name IN('tbdshout.css')");
 
   require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
   update_theme_stylesheet_list(1);
