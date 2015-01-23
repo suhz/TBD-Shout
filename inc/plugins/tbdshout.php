@@ -35,7 +35,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.4",
+    "version"       => "0.1.5",
     "compatibility" => "18*",
   );
 }
@@ -202,6 +202,7 @@ function tbdshout_activate() {
     float:left;
     margin-left:10px;
     width:90%;
+    height: auto;
   }
 
   .tbdshoutoddRowOdd {
@@ -224,6 +225,7 @@ function tbdshout_activate() {
   ";
 
   $template = '
+    <audio id="tbdshout_notify" src="https://chat.tbd.my/assets/notify.mp3" preload="auto"></audio>
     <div id="tbdshout_box" ng-app="tbdshoutApp">
       <table class="tborder" border="0" cellpadding="4" cellspacing="1">
         <thead>
@@ -251,7 +253,7 @@ function tbdshout_activate() {
                     <img class="tbdshoutRowimg" ng-src="{{row.avatar}}">
                   </div>
                   <div class="sr_msg">
-                    <b>{{row.name}}</b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
+                  <a href ng-click="delMsg(row)" ng-if="isadmin == 1 && row.id > 0">(del)</a> <b>{{row.name}}</b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
                   </div>
                   <masa>{{row.date | timeAgo}}</masa>
                 </div>
@@ -284,6 +286,21 @@ function tbdshout_activate() {
     <br />
     <center>$multipage</center>
     {$footer}
+    <script>
+    $(function() {
+      $(\'.delMsg\').click(function(e) {
+        e.preventDefault();
+
+        var msg_id = $(this).attr(\'msg_id\');
+        if (confirm("Are you sure you want to delete?") === true) {
+          $.post(\'xmlhttp.php?action=tbdshout_delete&post_code=\' + my_post_key, {id: msg_id}, function(ret) {
+            console.log($msg_id);
+            $(\'.shoutMsg_\' + msg_id).remove();
+          });
+        }
+      });
+    });
+    </script>
     </body>
     </html>';
 
@@ -338,7 +355,7 @@ function tbdshout_deactivate() {
   global $db;
 
   $db->query("DELETE FROM ".TABLE_PREFIX."templates WHERE title IN('tbdshout_box','tbdshout_box_full') AND sid='-1'");
-  $db->query("DELETE FROM ".TABLE_PREFIX."themestylesheets WHERE name IN('tbdshout.css') AND tid='1'");
+  $db->query("DELETE FROM ".TABLE_PREFIX."themestylesheets WHERE name IN('tbdshout.css')");
 
   require_once MYBB_ADMIN_DIR."inc/functions_themes.php";
   update_theme_stylesheet_list(1);
@@ -371,6 +388,9 @@ function tbdshout_xmlhttp() {
   } else
   if ($mybb->input['action'] == 'tbdshout_info') {
     tbdshout_getinfo();
+  } else
+  if ($mybb->input['action'] == 'tbdshout_delete') {
+    tbdshout_delShout();
   }
 }
 
@@ -421,6 +441,7 @@ function tbdshout_getShout() {
   while ($row = $db->fetch_array($q)) {
 
     $msg = array(
+      'id'        => $row['id'],
       'name'      => htmlspecialchars_uni($row['username']),
       'avatar'    => htmlspecialchars_uni($row['avatar']),
       'msg'       => $parser->parse_message(html_entity_decode($row['msg']),array('me_username' => $mybb->user['username'])),
@@ -431,7 +452,7 @@ function tbdshout_getShout() {
   }
 
   if ($mybb->settings['tbdshout_secret_key'] == '' || $mybb->settings['tbdshout_channel'] == '') {
-    if ($mybb->usergroup['cancp'] == 1 || $mybb->usergroup['issupermod'] == 1) {
+    if (tbdshout_isAdmin()) {
       $msg = array(
         'name'      => 'TBD Shout',
         'avatar'    => ' ',
@@ -445,6 +466,7 @@ function tbdshout_getShout() {
   $ret = array(
     'name'    => htmlspecialchars_uni($mybb->user['username']),
     'uid'     => (int)$mybb->user['uid'],
+    'isadmin' => (int)tbdshout_isAdmin(),
     'ukey'    => tbdshout_getKey($mybb->user['uid'], $mybb->user['username']), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
     'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
@@ -464,7 +486,7 @@ function tbdshout_sendShout() {
 
   $chat_server = array('128.199.222.90','2400:6180::d0:0:0:127:4001');
 
-  if (!$_POST) { die(); }
+  if($mybb->request_method != 'post') { die(); }
   if (!in_array(get_ip(), $chat_server)) { die(); }
 
   $data_arr = json_decode($mybb->input['push']);
@@ -488,6 +510,26 @@ function tbdshout_sendShout() {
 
   $db->insert_query_multiple('tbdshout',$save);
 
+}
+
+function tbdshout_delShout() {
+  global $mybb, $db;
+
+  verify_post_check($mybb->input['post_code']);
+
+  if($mybb->request_method == 'post') {
+    if (tbdshout_isAdmin()) {
+      $postdata = json_decode(file_get_contents("php://input"));
+
+      if ($mybb->input['id'] > 0){
+        $shout_id = (int)$mybb->input['id'];
+      } else {
+        $shout_id = (int)$postdata->id;
+      }
+
+      $db->query("DELETE FROM ".TABLE_PREFIX."tbdshout WHERE id='".$shout_id."'");
+    }
+  }
 }
 
 //list of smileys
@@ -553,11 +595,15 @@ function tbdshout_full() {
   $parser = new postParser;
 
   while ($row = $db->fetch_array($q)) {
+    if (tbdshout_isAdmin()){
+      $delete = "<a href='#' class='delMsg' msg_id='".$row['id']."'>(del)</a>";
+    }
+
     $username = '<a href="member.php?action=profile&uid='.intval($row['uid']).'">'.$row['username'].'</a>';
     $class = alt_trow();
     $msg  = $parser->parse_message(html_entity_decode($row['msg']),array('allow_smilies' => 'yes','me_username' => $mybb->user['username']));
     $msg_date = my_date('d-m H:i',strtotime($row['msg_date']));
-    $tbdshout_rows .= "<tr class='tbdshout_rows'><td class='{$class}'>&raquo; {$delete} {$msg_date} - <b>{$username}</b> - {$msg}</td></tr>";
+    $tbdshout_rows .= "<tr class='tbdshout_rows shoutMsg_".$row['id']."'><td class='{$class}'>&raquo; {$delete} {$msg_date} - <b>{$username}</b> - {$msg}</td></tr>";
   }
 
   eval("\$tbdshout_full = \"".$templates->get("tbdshout_box_full")."\";");
@@ -603,4 +649,13 @@ function tbdshout_linkyfy($text) {
 function tbdshout_getKey($uid, $username) {
   global $mybb;
   return base64_encode(hash_hmac('sha1',$mybb->settings['tbdshout_channel'].(int)$uid.$username, $mybb->settings['tbdshout_secret_key'],true));
+}
+
+function tbdshout_isAdmin() {
+  global $mybb;
+
+  if ($mybb->usergroup['cancp'] == 1 || $mybb->usergroup['issupermod'] == 1) {
+    return true;
+  }
+  return false;
 }
