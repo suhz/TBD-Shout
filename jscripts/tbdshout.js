@@ -6,12 +6,26 @@
 
 var tbdshoutApp = angular.module('tbdshoutApp', ['ngWebSocket','yaru22.angular-timeago']);
 
-tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', function ($scope,$sce,$http,$websocket){
+tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$window', function ($scope,$sce,$http,$websocket, $window){
 
-  var smiley_data = {},msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
+  var smiley_data = {}, nampak = true, msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
   var max_msg_row = 30;
   var reconnect_time = 2000;
-  $scope.shoutText = ''
+  $scope.shoutText = '';
+
+  $window.onblur = function() {
+    nampak = false;
+  };
+
+  $window.onfocus = function() {
+    nampak = true;
+  };
+
+  var playNotify = function() {
+    if (nampak === false) {
+      document.getElementById('tbdshout_notify').play();
+    }
+  };
 
   var statusChange = function(status) {
     $scope.status = status;
@@ -94,6 +108,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket', fun
       var msg = linky(data.msg);
 
       if (angular.equals(data.channel,udata.channel)) {
+        playNotify();
         msgcol.unshift({
           name:data.name,
           avatar: data.avatar,

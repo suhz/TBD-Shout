@@ -202,6 +202,7 @@ function tbdshout_activate() {
     float:left;
     margin-left:10px;
     width:90%;
+    height: auto;
   }
 
   .tbdshoutoddRowOdd {
@@ -224,6 +225,7 @@ function tbdshout_activate() {
   ";
 
   $template = '
+    <audio id="tbdshout_notify" src="https://chat.tbd.my/assets/notify.mp3" preload="auto"></audio>
     <div id="tbdshout_box" ng-app="tbdshoutApp">
       <table class="tborder" border="0" cellpadding="4" cellspacing="1">
         <thead>
