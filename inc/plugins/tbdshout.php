@@ -35,7 +35,7 @@ function tbdshout_info() {
     "website"       => "http://chat.tbd.my",
     "author"        => "Suhaimi Amir",
     "authorsite"    => "http://github.com/suhz",
-    "version"       => "0.1.4",
+    "version"       => "0.1.5",
     "compatibility" => "18*",
   );
 }
