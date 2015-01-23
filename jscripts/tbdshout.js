@@ -6,12 +6,26 @@
 
 var tbdshoutApp = angular.module('tbdshoutApp', ['ngWebSocket','yaru22.angular-timeago']);
 
+tbdshoutApp.directive('a', function() {
+  return {
+    restrict: 'E',
+    link: function(scope, elem, attrs) {
+      if(attrs.ngClick || attrs.href === '' || attrs.href === '#'){
+        elem.on('click', function(e){
+          e.preventDefault();
+        });
+      }
+    }
+  };
+});
+
 tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$window', function ($scope,$sce,$http,$websocket, $window){
 
-  var smiley_data = {}, lastMsgReq = 0, nampak = true, msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
+  var smiley_data = {}, bunyi = true, lastMsgReq = 0, nampak = true, msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
   var max_msg_row = 30;
   var reconnect_time = 2000;
   $scope.shoutText = '';
+  $scope.bunyi_txt = 'Sound: ON';
 
   $window.onblur = function() {
     nampak = false;
@@ -31,7 +45,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
   });
 
   var playNotify = function() {
-    if (nampak === false) {
+    if (nampak === false && bunyi === true) {
       document.getElementById('tbdshout_notify').play();
     }
   };
@@ -85,6 +99,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     if (lastmsg > 0) {
       if (lastMsgReq == lastmsg) { return false; }
       getLastMsg = '&lastMsg=' + lastmsg;
+      lastMsgReq = lastmsg;
     }
 
     $http.get('xmlhttp.php?action=tbdshout_get' + getLastMsg).success(function(data) {
@@ -179,6 +194,16 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
       .success(function(data) {
         msgcol.splice(index, 1);
       });
+    }
+  };
+
+  $scope.toggleSound = function() {
+    if (bunyi === true) {
+      bunyi = false;
+      $scope.bunyi_txt = 'Sound: OFF';
+    } else {
+      bunyi = true;
+      $scope.bunyi_txt = 'Sound: ON';
     }
   };
 
