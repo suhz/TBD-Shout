@@ -240,7 +240,7 @@ function tbdshout_activate() {
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)  (<a ng-href="#" ng-click=\'toggleSound()\'>{{bunyi_txt}}</a>)
                 <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
