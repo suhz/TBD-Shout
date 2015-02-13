@@ -240,7 +240,7 @@ function tbdshout_activate() {
           <tr>
             <td class="trow2">
               <form ng-submit="sendMsg()">
-                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)
+                Shout: <input size="50" type="text" ng-model="shoutText"> <input type="submit" value="Shout!" > (<a href="javascript:MyBB.popupWindow(\'/misc.php?action=tbdshout_smiley\')">Smiley</a>)  (<a ng-href="#" ng-click=\'toggleSound()\'>{{bunyi_txt}}</a>)
                 <div title="{{status_txt}}" class="bulat" ng-class="{hijau:status==1,oren:status>=2,merah:status<1}"></div>
               </form>
             </td>
@@ -430,8 +430,13 @@ function tbdshout_misc_smiley() {
 function tbdshout_getShout() {
   global $db, $mybb;
 
+  if (isset($mybb->input['lastMsg']) && $mybb->input['lastMsg'] > 0) {
+    $lastMsg_id = (int)$mybb->input['lastMsg'];
+    $where = "WHERE id < $lastMsg_id";
+  }
+
   $q = $db->query("SELECT c.*, u.username, u.usergroup, u.avatar, u.displaygroup FROM ".TABLE_PREFIX."tbdshout c
-  LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid = c.uid)
+  LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid = c.uid) $where
   ORDER by c.id DESC LIMIT " . (int)$mybb->settings['tbdshout_max_msg_disp']);
 
   $chat = array();

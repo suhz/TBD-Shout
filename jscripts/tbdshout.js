@@ -6,12 +6,26 @@
 
 var tbdshoutApp = angular.module('tbdshoutApp', ['ngWebSocket','yaru22.angular-timeago']);
 
+tbdshoutApp.directive('a', function() {
+  return {
+    restrict: 'E',
+    link: function(scope, elem, attrs) {
+      if(attrs.ngClick || attrs.href === '' || attrs.href === '#'){
+        elem.on('click', function(e){
+          e.preventDefault();
+        });
+      }
+    }
+  };
+});
+
 tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$window', function ($scope,$sce,$http,$websocket, $window){
 
-  var smiley_data = {}, nampak = true, msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
+  var smiley_data = {}, bunyi = true, lastMsgReq = 0, nampak = true, msgcol = [],udata,status_arr = {1:'',2:'Connecting...',0:'Disconnected',3:'Reconnecting...'};
   var max_msg_row = 30;
   var reconnect_time = 2000;
   $scope.shoutText = '';
+  $scope.bunyi_txt = 'Sound: ON';
 
   $window.onblur = function() {
     nampak = false;
@@ -21,8 +35,17 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     nampak = true;
   };
 
+  angular.element($('#tbdshoutRowBox')).bind("scroll", function (event) {
+    var x = event.currentTarget;
+    var last_msg = msgcol[msgcol.length - 1];
+
+    if(x.offsetHeight + x.scrollTop >= x.scrollHeight - 100) { console.log('abiss');
+      getMsg(function() {},last_msg.id);
+    }
+  });
+
   var playNotify = function() {
-    if (nampak === false) {
+    if (nampak === false && bunyi === true) {
       document.getElementById('tbdshout_notify').play();
     }
   };
@@ -71,9 +94,15 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     return smiley().parse(linky(msg));
   };
 
-  var start = function(callback) {
-    statusChange(0);
-    $http.get('xmlhttp.php?action=tbdshout_get').success(function(data) {
+  var getMsg = function(callback, lastmsg) {
+    var getLastMsg = '';
+    if (lastmsg > 0) {
+      if (lastMsgReq == lastmsg) { return false; }
+      getLastMsg = '&lastMsg=' + lastmsg;
+      lastMsgReq = lastmsg;
+    }
+
+    $http.get('xmlhttp.php?action=tbdshout_get' + getLastMsg).success(function(data) {
 
       smiley().set(data.smiley);
 
@@ -84,6 +113,14 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
         }
       }
 
+      callback(data);
+    });
+  };
+
+  var start = function(callback) {
+    statusChange(0);
+
+    getMsg(function(data) {
       $scope.sr_tinggi_kotak = { 'height': data.max_height + 'px'};
       udata = data;
       max_msg_row = data.max_msg;
@@ -93,6 +130,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
         callback();
       }
     });
+
   };
 
   start(function() {
@@ -156,6 +194,16 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
       .success(function(data) {
         msgcol.splice(index, 1);
       });
+    }
+  };
+
+  $scope.toggleSound = function() {
+    if (bunyi === true) {
+      bunyi = false;
+      $scope.bunyi_txt = 'Sound: OFF';
+    } else {
+      bunyi = true;
+      $scope.bunyi_txt = 'Sound: ON';
     }
   };
 
