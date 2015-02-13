@@ -497,6 +497,10 @@ function tbdshout_sendShout() {
   $data_arr = json_decode($mybb->input['push']);
   if (!is_array($data_arr)) { die(); }
 
+  $ret = array();
+  require_once MYBB_ROOT.'inc/class_parser.php';
+  $parser = new postParser;
+
   foreach ($data_arr as $x) {
     $user = get_user((int)$x->uid);
     if ($x->key !== tbdshout_getKey($x->uid, $user['username'])) { die(); }
@@ -504,17 +508,23 @@ function tbdshout_sendShout() {
 
     //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
 
-    $save[] = array(
+    $row = array(
       'uid'       => (int)$user['uid'],
       'msg'       => $db->escape_string(htmlspecialchars_uni(html_entity_decode($x->msg))),
       'msg_date'  => date('Y-m-d H:i:s', $db->escape_string($x->masa)),
-      'msg_ip'    => $db->escape_string($x->msg_ip),
+      'msg_ip'    => $db->escape_string($x->msg_ip)
       //'mobile'    => $mybb->input['mobile']==1?1:0
     );
+    $save[] = $row; //save messages into DB
+
+    $row['msgid']     = $x->msgid;
+    $row['username']  = '<a href="member.php?action=profile&uid='.intval($row['uid']).'">'.$row['username'].'</a>';
+    $row['msg']       = $parser->parse_message(html_entity_decode($row['msg']),array('allow_smilies' => 'yes','me_username' => $mybb->user['username']));
+    $ret[] = $row; //push formatted message to users
   }
 
   $db->insert_query_multiple('tbdshout',$save);
-
+  die(json_encode($ret));
 }
 
 function tbdshout_delShout() {
