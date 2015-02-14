@@ -105,6 +105,36 @@ function tbdshout_install() {
       'value'         => '350',
       'disporder'     => 4,
       'gid'           => (int)$gid
+    ),
+    array(
+      'sid'           => 'NULL',
+      'name'          => 'tbdshout_allow_mycode',
+      'title'         => 'Allow MyCode',
+      'description'   => 'Allow MyCode in shout?',
+      'optionscode'   => 'yesno',
+      'value'         => '1',
+      'disporder'     => 10,
+      'gid'           => (int)$gid
+    ),
+    array(
+      'sid'           => 'NULL',
+      'name'          => 'tbdshout_allow_imgcode',
+      'title'         => 'Allow IMGCode',
+      'description'   => 'Allow images in shout?',
+      'optionscode'   => 'yesno',
+      'value'         => '0',
+      'disporder'     => 11,
+      'gid'           => (int)$gid
+    ),
+    array(
+      'sid'           => 'NULL',
+      'name'          => 'tbdshout_allow_smilies',
+      'title'         => 'Allow Smiley',
+      'description'   => 'Allow smiley in shout?',
+      'optionscode'   => 'yesno',
+      'value'         => '1',
+      'disporder'     => 12,
+      'gid'           => (int)$gid
     )
   );
 
@@ -253,7 +283,7 @@ function tbdshout_activate() {
                     <img class="tbdshoutRowimg" ng-src="{{row.avatar}}">
                   </div>
                   <div class="sr_msg">
-                  <a href ng-click="delMsg(row)" ng-if="isadmin == 1 && row.id > 0">(del)</a> <b>{{row.name}}</b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
+                  <a href ng-click="delMsg(row)" ng-if="isadmin == 1 && row.id > 0">(del)</a> <b ng-bind-html="tawakalJela(row.name)"></b> : <span ng-bind-html="tawakalJela(row.msg)"></span>
                   </div>
                   <masa>{{row.date | timeAgo}}</masa>
                 </div>
@@ -443,13 +473,20 @@ function tbdshout_getShout() {
   require_once MYBB_ROOT.'inc/class_parser.php';
   $parser = new postParser;
 
+  $parser_options = array(
+    'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
+    'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
+    'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
+    'me_username'   => $user['username']
+  );
+
   while ($row = $db->fetch_array($q)) {
 
     $msg = array(
       'id'        => $row['id'],
-      'name'      => htmlspecialchars_uni($row['username']),
+      'name'      => format_name($row['username'], $row['usergroup'], $row['displaygroup']),
       'avatar'    => htmlspecialchars_uni($row['avatar']),
-      'msg'       => $parser->parse_message(html_entity_decode($row['msg']),array('me_username' => $mybb->user['username'])),
+      'msg'       => $parser->parse_message(html_entity_decode($row['msg']),$parser_options),
       'date'      => date('c',strtotime($row['msg_date']))
     );
 
@@ -472,7 +509,7 @@ function tbdshout_getShout() {
     'name'    => htmlspecialchars_uni($mybb->user['username']),
     'uid'     => (int)$mybb->user['uid'],
     'isadmin' => (int)tbdshout_isAdmin(),
-    'ukey'    => tbdshout_getKey($mybb->user['uid'], $mybb->user['username']), //user key
+    'ukey'    => tbdshout_getKey($mybb->user), //user key
     'skey'    => md5($mybb->settings['tbdshout_channel'].$mybb->settings['tbdshout_secret_key']), //server access key
     'avatar'  => htmlspecialchars_uni($mybb->user['avatar']),
     'channel' => htmlspecialchars_uni($mybb->settings['tbdshout_channel']),
@@ -489,42 +526,47 @@ function tbdshout_getShout() {
 function tbdshout_sendShout() {
   global $db, $mybb;
 
-  $chat_server = array('128.199.222.90','2400:6180::d0:0:0:127:4001');
+  if($mybb->request_method != 'post') { die; }
 
-  if($mybb->request_method != 'post') { die(); }
-  if (!in_array(get_ip(), $chat_server)) { die(); }
+  $data_arr = json_decode($mybb->input['push']); $x = $data_arr;
+  if (!is_object($data_arr)) { die; }
 
-  $data_arr = json_decode($mybb->input['push']);
-  if (!is_array($data_arr)) { die(); }
+  $user = get_user((int)$x->uid);
+  if ($x->key !== tbdshout_getKey($user)) { die; }
 
-  $ret = array();
+  tbdshout_canView($user);
+
   require_once MYBB_ROOT.'inc/class_parser.php';
   $parser = new postParser;
 
-  foreach ($data_arr as $x) {
-    $user = get_user((int)$x->uid);
-    if ($x->key !== tbdshout_getKey($x->uid, $user['username'])) { die(); }
-    tbdshout_canView($user);
 
-    //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
+  //if ($x['channel'] != $mybb->settings['tbdshout_channel']) { continue; }
 
-    $row = array(
-      'uid'       => (int)$user['uid'],
-      'msg'       => $db->escape_string(htmlspecialchars_uni(html_entity_decode($x->msg))),
-      'msg_date'  => date('Y-m-d H:i:s', $db->escape_string($x->masa)),
-      'msg_ip'    => $db->escape_string($x->msg_ip)
-      //'mobile'    => $mybb->input['mobile']==1?1:0
-    );
-    $save[] = $row; //save messages into DB
+  $row = array(
+    'uid'       => (int)$user['uid'],
+    'msg'       => $db->escape_string(htmlspecialchars_uni(html_entity_decode($x->msg))),
+    'msg_date'  => date('Y-m-d H:i:s', $db->escape_string($x->masa)),
+    'msg_ip'    => $db->escape_string($x->msg_ip)
+    //'mobile'    => $mybb->input['mobile']==1?1:0
+  );
 
-    $row['msgid']     = $x->msgid;
-    $row['username']  = '<a href="member.php?action=profile&uid='.intval($row['uid']).'">'.$row['username'].'</a>';
-    $row['msg']       = $parser->parse_message(html_entity_decode($row['msg']),array('allow_smilies' => 'yes','me_username' => $mybb->user['username']));
-    $ret[] = $row; //push formatted message to users
-  }
+  $db->insert_query('tbdshout', $row);
 
-  $db->insert_query_multiple('tbdshout',$save);
-  die(json_encode($ret));
+  $parser_options = array(
+    'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
+    'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
+    'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
+    'me_username'   => $user['username']
+  );
+
+  $row['id']        = $db->insert_id();
+  $row['msgid']     = $x->msgid;
+  $row['channel']   = $x->channel;
+  $row['masa']      = $x->masa;
+  $row['avatar']    = $user['avatar'];
+  $row['name']      = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
+  $row['msg']       = $parser->parse_message(html_entity_decode($x->msg),$parser_options);
+  die(json_encode($row));
 }
 
 function tbdshout_delShout() {
@@ -609,6 +651,13 @@ function tbdshout_full() {
   require_once MYBB_ROOT.'inc/class_parser.php';
   $parser = new postParser;
 
+  $parser_options = array(
+    'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
+    'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
+    'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
+    'me_username'   => $user['username']
+  );
+
   while ($row = $db->fetch_array($q)) {
     if (tbdshout_isAdmin()){
       $delete = "<a href='#' class='delMsg' msg_id='".$row['id']."'>(del)</a>";
@@ -616,7 +665,7 @@ function tbdshout_full() {
 
     $username = '<a href="member.php?action=profile&uid='.intval($row['uid']).'">'.$row['username'].'</a>';
     $class = alt_trow();
-    $msg  = $parser->parse_message(html_entity_decode($row['msg']),array('allow_smilies' => 'yes','me_username' => $mybb->user['username']));
+    $msg  = $parser->parse_message(html_entity_decode($row['msg']),$parser_options);
     $msg_date = my_date('d-m H:i',strtotime($row['msg_date']));
     $tbdshout_rows .= "<tr class='tbdshout_rows shoutMsg_".$row['id']."'><td class='{$class}'>&raquo; {$delete} {$msg_date} - <b>{$username}</b> - {$msg}</td></tr>";
   }
@@ -661,9 +710,8 @@ function tbdshout_linkyfy($text) {
   return preg_replace("/([\w]+\:\/\/[\w-?&;#~=\.\/\@]+[\w\/])/", "<a target=\"_blank\" href=\"$1\">$1</a>", $text);
 }
 
-function tbdshout_getKey($uid, $username) {
-  global $mybb;
-  return base64_encode(hash_hmac('sha1',$mybb->settings['tbdshout_channel'].(int)$uid.$username, $mybb->settings['tbdshout_secret_key'],true));
+function tbdshout_getKey($user) {
+  return md5($user['loginkey'].$user['salt'].$user['regdate']);
 }
 
 function tbdshout_isAdmin() {
