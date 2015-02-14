@@ -27,6 +27,8 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
   $scope.shoutText = '';
   $scope.bunyi_txt = 'Sound: ON';
 
+  var pendingMsg = {};
+
   $window.onblur = function() {
     nampak = false;
   };
@@ -39,7 +41,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     var x = event.currentTarget;
     var last_msg = msgcol[msgcol.length - 1];
 
-    if(x.offsetHeight + x.scrollTop >= x.scrollHeight - 100) { console.log('abiss');
+    if(x.offsetHeight + x.scrollTop >= x.scrollHeight - 100) {
       getMsg(function() {},last_msg.id);
     }
   });
@@ -60,24 +62,15 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     return text.replace(urlPattern, '<a target="_blank" href="$&">$&</a>');
   };
 
-  var smiley = function() {
-    return {
-      set: function(data) {
-        smiley_data = data;
-      },
-      parse: function (msg) {
-        var ret_msg = ""; var words = msg.split(" ");
-        for (var i = 0; i < words.length; i++) {
-          if(smiley_data.hasOwnProperty(words[i])){
-            ret_msg += " <img style=\"vertical-align: middle;\" border=\"0\" class='smilies' src='"+ smiley_data[words[i]].img +"'>";
-          }else{
-            ret_msg += ' ' + words[i];
-          }
+  /*var getMsgById = function(msgid) {
+    for (var i=0; i < msgcol.length; i++) {
+        if (msgcol[i].msgid === msgid) {
+            return msgcol[i];
+        } else {
+          return null;
         }
-        return ret_msg;
-      }
-    };
-  };
+    }
+  };*/
 
   var reconnect = function() {
 
@@ -90,9 +83,14 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     }, reconnect_time);
   };
 
-  var formatMsg = function(msg) {
-    return smiley().parse(linky(msg));
-  };
+  var randomStr = function (){
+    var s = "", x = 16;
+    while(s.length<x&&x>0){
+        var r = Math.random();
+        s+= (r<0.1?Math.floor(r*100):String.fromCharCode(Math.floor(r*26) + (r>0.5?97:65)));
+    }
+    return s;
+}
 
   var getMsg = function(callback, lastmsg) {
     var getLastMsg = '';
@@ -104,11 +102,9 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
 
     $http.get('xmlhttp.php?action=tbdshout_get' + getLastMsg).success(function(data) {
 
-      smiley().set(data.smiley);
-
       if (data.msg) {
         for (var i in data.msg) {
-          data.msg[i].msg = formatMsg(data.msg[i].msg);
+          data.msg[i].msg = data.msg[i].msg;
           msgcol.push(data.msg[i]);
         }
       }
@@ -138,21 +134,24 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
     ws = $websocket('wss://chat.tbd.my/con/' + udata.skey + '/' + udata.channel);
 
     ws.onMessage(function(data) {
+
       data = angular.fromJson(data.data);
 
       if (data.name === '') { return; }
       if (data.uid < 1) { return; }
 
-      var msg = linky(data.msg);
-
       if (angular.equals(data.channel,udata.channel)) {
         playNotify();
+
         msgcol.unshift({
+          id: data.id,
+          msgid: data.msgid,
           name:data.name,
           avatar: data.avatar,
-          msg: formatMsg(data.msg),
+          msg: data.msg,
           date: (new Date()).getTime(),
         });
+
         if (msgcol.length >= max_msg_row) {
           msgcol.pop();
         }
@@ -178,7 +177,7 @@ tbdshoutApp.controller('shoutCtrl', ['$scope', '$sce', '$http','$websocket','$wi
   };
 
   $scope.sendMsg = function() {
-    ws.send(JSON.stringify({name:udata.name,uid:udata.uid,msg:$scope.shoutText,key:udata.ukey,channel:udata.channel,avatar:udata.avatar}));
+    ws.send(JSON.stringify({msgid:randomStr(),name:udata.name,uid:udata.uid,msg:$scope.shoutText,key:udata.ukey,channel:udata.channel,avatar:udata.avatar}));
     $scope.shoutText = '';
   };
 
