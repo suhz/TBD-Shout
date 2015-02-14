@@ -203,7 +203,6 @@ function tbdshout_activate() {
   .status-bull, .hijau, .oren, .merah {
     cursor:help;
     vertical-align:bottom;
-    padding-top:10px;
   }
 
   .bulat {
