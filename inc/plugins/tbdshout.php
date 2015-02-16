@@ -472,14 +472,14 @@ function tbdshout_getShout() {
   require_once MYBB_ROOT.'inc/class_parser.php';
   $parser = new postParser;
 
-  $parser_options = array(
-    'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
-    'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
-    'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
-    'me_username'   => $user['username']
-  );
-
   while ($row = $db->fetch_array($q)) {
+
+    $parser_options = array(
+      'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
+      'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
+      'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
+      'me_username'   => $row['username']
+    );
 
     $msg = array(
       'id'        => $row['id'],
@@ -650,14 +650,15 @@ function tbdshout_full() {
   require_once MYBB_ROOT.'inc/class_parser.php';
   $parser = new postParser;
 
-  $parser_options = array(
-    'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
-    'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
-    'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
-    'me_username'   => $user['username']
-  );
-
   while ($row = $db->fetch_array($q)) {
+
+    $parser_options = array(
+      'allow_mycode'  => $mybb->settings['tbdshout_allow_mycode'],
+      'allow_smilies' => $mybb->settings['tbdshout_allow_smilies'],
+      'allow_imgcode' => $mybb->settings['tbdshout_allow_imgcode'],
+      'me_username'   => $row['username']
+    );
+
     if (tbdshout_isAdmin()){
       $delete = "<a href='#' class='delMsg' msg_id='".$row['id']."'>(del)</a>";
     }
