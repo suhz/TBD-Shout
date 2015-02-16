@@ -561,7 +561,7 @@ function tbdshout_sendShout() {
 
   $public = array(
     'id'          => (int)$db->insert_id(),
-    'msgid'       => htmlspecialchars_uni($x->msgid,)
+    'msgid'       => htmlspecialchars_uni($x->msgid),
     'channel'     => $x->channel,
     'masa'        => $x->masa,
     'avatar'      => $user['avatar'],
