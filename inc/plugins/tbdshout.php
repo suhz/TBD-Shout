@@ -525,6 +525,7 @@ function tbdshout_getShout() {
 function tbdshout_sendShout() {
   global $db, $mybb;
 
+  if ($_GET['key'] !== $mybb->settings['tbdshout_secret_key']) { die; }
   if($mybb->request_method != 'post') { die; }
 
   $data_arr = json_decode($mybb->input['push']); $x = $data_arr;
@@ -558,14 +559,17 @@ function tbdshout_sendShout() {
     'me_username'   => $user['username']
   );
 
-  $row['id']        = $db->insert_id();
-  $row['msgid']     = $x->msgid;
-  $row['channel']   = $x->channel;
-  $row['masa']      = $x->masa;
-  $row['avatar']    = $user['avatar'];
-  $row['name']      = format_name($user['username'], $user['usergroup'], $user['displaygroup']);
-  $row['msg']       = $parser->parse_message(html_entity_decode($x->msg),$parser_options);
-  die(json_encode($row));
+  $public = array(
+    'id'          => (int)$db->insert_id(),
+    'msgid'       => htmlspecialchars_uni($x->msgid,)
+    'channel'     => $x->channel,
+    'masa'        => $x->masa,
+    'avatar'      => $user['avatar'],
+    'name'        => format_name($user['username'], $user['usergroup'], $user['displaygroup']),
+    'msg'         => $parser->parse_message(html_entity_decode($x->msg),$parser_options)
+  );
+
+  die(json_encode($public));
 }
 
 function tbdshout_delShout() {
