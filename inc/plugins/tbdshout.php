@@ -544,7 +544,7 @@ function tbdshout_sendShout() {
 
   $row = array(
     'uid'       => (int)$user['uid'],
-    'msg'       => $db->escape_string(htmlspecialchars_uni(html_entity_decode($x->msg))),
+    'msg'       => $db->escape_string(htmlspecialchars_uni($x->msg)),
     'msg_date'  => date('Y-m-d H:i:s', $db->escape_string($x->masa)),
     'msg_ip'    => $db->escape_string($x->msg_ip)
     //'mobile'    => $mybb->input['mobile']==1?1:0
